@@ -3,19 +3,7 @@ const { Worker } = require('node:worker_threads');
 
 const DEFAULT_POOL_SIZE = 5;
 
-const script = `'use strict';
-
-const { parentPort } = require('node:worker_threads');
-const func = () => 'hello, world';
-
-parentPort.on('message', () => {
-  const result = func();
-  parentPort.postMessage(result);
-});
-
-`;
-
-const createPool = (size) => {
+const createPool = (script, size) => {
   const pool = [];
   for (let i = 0; i < size; i++) {
     const worker = new Worker(script, {
@@ -33,7 +21,7 @@ const execute = (worker, args) => {
   return new Promise((resolve) => {
     worker.postMessage(args);
     worker.on('message', (result) => {
-      console.log('Recieved answer from thread#', worker.threadId);
+      console.log('Recieved answer from thread#', worker.threadId, result);
       resolve(result);
     });
   });
@@ -41,9 +29,27 @@ const execute = (worker, args) => {
 
 const parallelize = (func, options = {}) => {
   const pool = options.pool || DEFAULT_POOL_SIZE;
-  const workers = createPool(pool);
+
+  if (typeof func !== 'function') {
+    throw new Error('first argument must be type of function');
+  }
+
+  const functionScript = func.toString();
+
+  const script = `'use strict';
+
+const { parentPort } = require('node:worker_threads');
+const func = ${func};//() => 'hello, world';
+
+parentPort.on('message', (args) => {
+  const result = func.apply(null, args);
+  parentPort.postMessage(result);
+});
+`;
+
+  const workers = createPool(script, pool);
   let i = 0;
-  return (args) => execute(workers[i++ % pool], args);
+  return (...args) => execute(workers[i++ % pool], args);
 }
 
 
