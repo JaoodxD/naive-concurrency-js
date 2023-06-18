@@ -1,6 +1,9 @@
 'use strict';
 
 const { parallelize } = require('./parallelizer.js');
+const { cpus } = require('node:os');
+
+const CPU_COUNT = cpus().length;
 
 const heavyComputation = (m, n) => {
   let sum = 0;
@@ -15,6 +18,18 @@ const inputs = [
   [2_000_000, 20_000_000],
   [3_000_000, 30_000_000],
   [4_000_000, 40_000_000],
+  [1, 100_000],
+  [200_000, 500_000],
+  [1_000_000, 10_000_000],
+  [2_000_000, 20_000_000],
+  [3_000_000, 30_000_000],
+  [4_000_000, 40_000_000],
+  [1, 100_000],
+  [200_000, 500_000],
+  [1_000_000, 10_000_000],
+  [2_000_000, 20_000_000],
+  [3_000_000, 30_000_000],
+  [4_000_000, 40_000_000],
 ];
 
 console.time('sum of ranges');
@@ -23,9 +38,11 @@ console.timeEnd('sum of ranges');
 console.table(results);
 
 (async () => {
+  console.time('pool initialization');
   const func = parallelize(heavyComputation, {
-    pool: 6
+    pool: CPU_COUNT - 1
   });
+  console.timeEnd('pool initialization');
 
   console.time('parallel sum of ranges');
   const promises = inputs.map((args) => func(...args));
