@@ -1,5 +1,7 @@
 'use strict';
 
+const { parallelize } = require('./parallelizer.js');
+
 const heavyComputation = (m, n) => {
   let sum = 0;
   for (let i = m; i <= n; i++) sum += i ** 6;
@@ -19,3 +21,15 @@ console.time('sum of ranges');
 const results = inputs.map((args) => heavyComputation(...args));
 console.timeEnd('sum of ranges');
 console.table(results);
+
+(async () => {
+  const func = parallelize(heavyComputation, {
+    pool: 6
+  });
+
+  console.time('parallel sum of ranges');
+  const promises = inputs.map((args) => func(...args));
+  const results = await Promise.all(promises);
+  console.timeEnd('parallel sum of ranges');
+  console.table(results);
+})();
