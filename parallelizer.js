@@ -27,9 +27,7 @@ const execute = (worker, args) => {
   });
 };
 
-const parallelize = (func, options = {}) => {
-  const pool = options.pool || DEFAULT_POOL_SIZE;
-
+const buildWorkerScriptWithFunction = (func) => {
   if (typeof func !== 'function') {
     throw new Error('first argument must be type of function');
   }
@@ -44,7 +42,13 @@ parentPort.on('message', (args) => {
   parentPort.postMessage(result);
 });
 `;
+  return script;
+}
 
+const parallelize = (func, options = {}) => {
+  const pool = options.pool || DEFAULT_POOL_SIZE;
+
+  const script = buildWorkerScriptWithFunction(func);
   const workers = createPool(script, pool);
   let i = 0;
   return (...args) => execute(workers[i++ % pool], args);
