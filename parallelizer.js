@@ -34,8 +34,6 @@ const parallelize = (func, options = {}) => {
     throw new Error('first argument must be type of function');
   }
 
-  const functionScript = func.toString();
-
   const script = `'use strict';
 
 const { parentPort } = require('node:worker_threads');
