@@ -143,7 +143,10 @@ const parallelize = (func, options = {}) => {
 
 const finalize = async (print = false) => {
   const data = balancer.utilizations;
-  if (print) console.table(data);
+  if (print) {
+    console.log('% of utilization on each worker every 250ms');
+    console.table(data);
+  }
   const finals = [];
   for (const worker of balancer.pool) {
     finals.push(worker.terminate());
