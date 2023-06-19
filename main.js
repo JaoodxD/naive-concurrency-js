@@ -4,11 +4,10 @@ const { parallelize, finalize } = require('./parallelizer.js');
 const { cpus } = require('node:os');
 
 const [, , cores_text, printStat_text] = process.argv;
-
 const cores = +cores_text;
 const print = printStat_text === 'true';
 
-// const CPU_COUNT = cpus().length;
+const CPU_COUNT = cpus().length;
 
 const heavyComputation = (m, n) => {
   let sum = 0;
@@ -65,11 +64,12 @@ console.table(results);
 // Concurrent execution
 (async () => {
 
-  const poolSize = Number.isFinite(cores) || 6;
+  const poolSize = Number.isFinite(cores) ? cores : CPU_COUNT - 1;
+  console.log({ poolSize });
 
   console.time('pool initialization');
   const func = parallelize(heavyComputation, {
-    pool: poolSize,//CPU_COUNT - 1,
+    pool: poolSize,
     interval: 250
   });
   console.timeEnd('pool initialization');
