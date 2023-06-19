@@ -42,6 +42,9 @@ console.table(results);
   const results = await Promise.all(promises);
   console.timeEnd('parallel sum of ranges');
 
-  if (print) console.table(results);
+  if (print) {
+    console.log('calculation results:');
+    console.table(results);
+  }
   finalize(print);
 })();
