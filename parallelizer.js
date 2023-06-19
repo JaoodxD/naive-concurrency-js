@@ -141,7 +141,7 @@ const parallelize = (func, options = {}) => {
   return invoke;
 };
 
-const finalize = async (print = true) => {
+const finalize = async (print = false) => {
   const data = balancer.utilizations;
   if (print) console.table(data);
   const finals = [];
