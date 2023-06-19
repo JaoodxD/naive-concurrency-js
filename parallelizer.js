@@ -9,7 +9,7 @@ const balancer = {
   pool: [],
   busy: new Map, // <Worker, true || false>
   workerForTask: new Map, // <taskId, Worker>
-  tasks: new Map, // <taskId, { taskId, resolve, reject, args }>
+  tasks: new Map, // <taskId, { taskId, resolve, reject, args, queueStart, queueFinish, execStart, execFinish }>
 
   queue: [],
 };
@@ -52,22 +52,36 @@ const dispatchNewTask = (worker) => {
   const task = balancer.queue.shift();
   if (!task) return;
 
+  const time = performance.now();
+  task.queueFinish = time;
+  task.execStart = time;
   const { taskId, args } = task;
   balancer.busy.set(worker, true);
   balancer.workerForTask.set(taskId, worker);
   balancer.tasks.set(taskId, task);
-  console.log('sending...$', taskId, 'to #', worker.threadId);
+  // console.log('sending...$', taskId, 'to #', worker.threadId);
   worker.postMessage({ taskId, args });
 };
 
 const workerResult = ({ taskId, result, error }) => {
+  const time = performance.now();
+  
   const task = balancer.tasks.get(taskId);
+  task.execFinish = time;
+  const { queueStart, queueFinish, execStart, execFinish } = task;
   const worker = balancer.workerForTask.get(taskId);
 
   balancer.busy.set(worker, false);
   balancer.workerForTask.delete(taskId);
   balancer.tasks.delete(taskId);
-  console.log('recieving $', taskId, ' from #', worker.threadId);
+  // console.log('recieving $', taskId, ' from #', worker.threadId);
+  console.log(
+    'Finished task#', taskId,
+    '\nqueue time:', ~~(queueFinish - queueStart),
+    '\nexec time:', ~~(execFinish - execStart),
+    '\nworker:', worker.threadId,
+    '\n~~~~~~~~~~~~~~~~~~~'
+  );
   if (error) task.reject(error);
   else task.resolve(result);
   dispatchNewTask(worker);
@@ -83,15 +97,25 @@ const invoke = (...args) => {
     }
   }
   return new Promise((resolve, reject) => {
-    const task = { taskId, resolve, reject, args };
+    const time = performance.now();
+    const task = {
+      taskId,
+      resolve, reject,
+      args,
+      queueStart: 0, queueFinish: 0,
+      execStart: -Infinity, execFinish: -Infinity
+    };
     if (!freeWorker) {
+      task.queueStart = time;
       balancer.queue.push(task);
       return;
     }
     balancer.busy.set(freeWorker, true);
     balancer.workerForTask.set(taskId, freeWorker);
     balancer.tasks.set(taskId, task);
-    console.log('sending...$', taskId, 'to #', freeWorker.threadId);
+    // console.log('sending...$', taskId, 'to #', freeWorker.threadId);
+    task.queueFinish;
+    task.execStart = time;
     freeWorker.postMessage({ taskId, args });
   });
 };
