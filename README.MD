@@ -20,4 +20,4 @@ Main script has two command line optional parameters:
 - `w18` - 18 workers
 - `w11:stat` - 11 workers, additional stats to print
 ### Example
-`npm start w11:stat`
+`npm run w11:stat`
