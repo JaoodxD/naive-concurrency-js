@@ -63,7 +63,6 @@ const dispatchNewTask = (worker) => {
   balancer.busy.set(worker, true);
   balancer.workerForTask.set(taskId, worker);
   balancer.tasks.set(taskId, task);
-  // console.log('sending...$', taskId, 'to #', worker.threadId);
   worker.postMessage({ taskId, args });
 };
 
@@ -78,7 +77,6 @@ const workerResult = ({ taskId, result, error }) => {
   balancer.busy.set(worker, false);
   balancer.workerForTask.delete(taskId);
   balancer.tasks.delete(taskId);
-  // console.log('recieving $', taskId, ' from #', worker.threadId);
   if (balancer.logging) console.log(
     'Finished task#', taskId,
     '\nqueue time:', ~~(queueFinish - queueStart),
@@ -117,7 +115,6 @@ const invoke = (...args) => {
     balancer.busy.set(freeWorker, true);
     balancer.workerForTask.set(taskId, freeWorker);
     balancer.tasks.set(taskId, task);
-    // console.log('sending...$', taskId, 'to #', freeWorker.threadId);
     task.queueFinish;
     task.execStart = time;
     freeWorker.postMessage({ taskId, args });
@@ -125,12 +122,10 @@ const invoke = (...args) => {
 };
 
 const monitor = () => {
-  /** @type {[Worker]} */
   const utilizations = balancer.pool.map((worker) =>
     worker.performance.eventLoopUtilization().utilization);
 
   const mappedPercentages = utilizations.map((val) => ~~(val * 100));
-  // console.table(mappedPercentages, {});
   balancer.utilizations.push(mappedPercentages);
 }
 
