@@ -3,7 +3,6 @@ const { Worker } = require('node:worker_threads');
 
 
 const DEFAULT_POOL_SIZE = 5;
-const DEFAULT_DISPATCHER_INTERVAL = 100;
 
 const balancer = {
   id: 1,
@@ -99,7 +98,6 @@ const invoke = (...args) => {
 
 const parallelize = (func, options = {}) => {
   const pool = options.pool || DEFAULT_POOL_SIZE;
-  const dispatcherInterval = options.dispatcher || DEFAULT_DISPATCHER_INTERVAL;
   const script = buildWorkerScriptWithFunction(func);
   createPool(script, pool);
   return invoke;
