@@ -3,6 +3,8 @@ const { Worker } = require('node:worker_threads');
 
 
 const DEFAULT_POOL_SIZE = 5;
+const DEFAULT_LOGGING_FLAG = false;
+const DEFAULT_UTILIZATION_GATHER_INTERVAL = 1000;
 
 const balancer = {
   id: 1,
@@ -10,8 +12,10 @@ const balancer = {
   busy: new Map, // <Worker, true || false>
   workerForTask: new Map, // <taskId, Worker>
   tasks: new Map, // <taskId, { taskId, resolve, reject, args, queueStart, queueFinish, execStart, execFinish }>
-
   queue: [],
+  logging: false,
+  timer: null,
+  utilizations: []
 };
 
 const createPool = (script, size) => {
@@ -65,7 +69,7 @@ const dispatchNewTask = (worker) => {
 
 const workerResult = ({ taskId, result, error }) => {
   const time = performance.now();
-  
+
   const task = balancer.tasks.get(taskId);
   task.execFinish = time;
   const { queueStart, queueFinish, execStart, execFinish } = task;
@@ -75,7 +79,7 @@ const workerResult = ({ taskId, result, error }) => {
   balancer.workerForTask.delete(taskId);
   balancer.tasks.delete(taskId);
   // console.log('recieving $', taskId, ' from #', worker.threadId);
-  console.log(
+  if (balancer.logging) console.log(
     'Finished task#', taskId,
     '\nqueue time:', ~~(queueFinish - queueStart),
     '\nexec time:', ~~(execFinish - execStart),
@@ -120,11 +124,36 @@ const invoke = (...args) => {
   });
 };
 
-const parallelize = (func, options = {}) => {
-  const pool = options.pool || DEFAULT_POOL_SIZE;
-  const script = buildWorkerScriptWithFunction(func);
-  createPool(script, pool);
-  return invoke;
+const monitor = () => {
+  /** @type {[Worker]} */
+  const utilizations = balancer.pool.map((worker) =>
+    worker.performance.eventLoopUtilization().utilization);
+
+  const mappedPercentages = utilizations.map((val) => ~~(val * 100));
+  // console.table(mappedPercentages, {});
+  balancer.utilizations.push(mappedPercentages);
 }
 
-module.exports = { parallelize };
+const parallelize = (func, options = {}) => {
+  const pool = options.pool || DEFAULT_POOL_SIZE;
+  const logging = options.logging || DEFAULT_LOGGING_FLAG;
+  balancer.logging = logging;
+  const utilizationInterval = options.interval || DEFAULT_UTILIZATION_GATHER_INTERVAL;
+
+  const script = buildWorkerScriptWithFunction(func);
+  createPool(script, pool);
+  setInterval(monitor, utilizationInterval).unref();
+  return invoke;
+};
+
+const finalize = async () => {
+  const data = balancer.utilizations;
+  console.table(data);
+  const finals = [];
+  for (const worker of balancer.pool) {
+    finals.push(worker.terminate());
+  }
+  await Promise.allSettled(finals);
+};
+
+module.exports = { parallelize, finalize };
