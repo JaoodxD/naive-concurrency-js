@@ -4,7 +4,13 @@
   "description": "",
   "main": "main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node main.js",
+    "w2": "node main.js 2",
+    "w5": "node main.js 5",
+    "w6": "node main.js 6",
+    "w11": "node main.js 11",
+    "w18": "node main.js 18",
+    "w11:stat": "node main.js 11 true"
   },
   "keywords": [],
   "author": "Maksym Shenderuk <jaood96@gmail.com>",
