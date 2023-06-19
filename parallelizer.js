@@ -141,9 +141,9 @@ const parallelize = (func, options = {}) => {
   return invoke;
 };
 
-const finalize = async () => {
+const finalize = async (print = true) => {
   const data = balancer.utilizations;
-  console.table(data);
+  if (print) console.table(data);
   const finals = [];
   for (const worker of balancer.pool) {
     finals.push(worker.terminate());
